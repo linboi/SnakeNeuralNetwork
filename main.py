@@ -16,6 +16,9 @@ def graphics(board):
 	snekTextRect = snekText.get_rect()
 	snekTextRect.topleft = (5, 5)
 	font = pygame.font.Font(None, 16)
+	scoreText = font.render("SCORE: " + str(board.snake.score), True, (200,200,0), (0,0,0))
+	scoreTextRect = scoreText.get_rect()
+	scoreTextRect.bottomleft = (5,const.SCREEN_HEIGHT-5)
 	text = font.render("", True, (200,200,0), (0,0,0))
 	textRect = text.get_rect()
 	textRect.center = (const.SCREEN_WIDTH-70, 5)
@@ -24,7 +27,6 @@ def graphics(board):
 	boardSurface.fill((150, 150, 150))
 	board.drawInit(boardSurface)
 
-	#board = snake.Board(sizeX=40,sizeY=40, surface=boardSurface)
 	# Run until the user asks to quit
 	running = True
 	count = 0
@@ -51,6 +53,8 @@ def graphics(board):
 				FPS = (1/frameTime)*30
 		text = font.render(("FPS: " + str(FPS)), True, (200,200,0), (0,0,0))
 		screen.blit(text, textRect)
+		scoreText = font.render("SCORE: " + str(board.snake.score), True, (230,230,255), (0,0,0))
+		screen.blit(scoreText, scoreTextRect)
 		board.draw()
 		screen.blit(boardSurface, (const.BORDER, const.BORDER))
 		# Did the user click the window close button?

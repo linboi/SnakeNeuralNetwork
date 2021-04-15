@@ -45,13 +45,6 @@ class Board():
 		self.blockHeight = self.drawingHeight/self.height
 
 	def draw(self):
-		#if not self.beans:
-		#	for a in self.grid:
-		#		print(a)
-		#		#for b in a:
-		#		#	print(b, end=" ")
-		#		#print("", end="\n")
-		#self.beans = True
 		for position in self.updatedSquares:
 			rowIdx, colIdx = position
 			square = self.grid[rowIdx][colIdx]
@@ -67,7 +60,6 @@ class Board():
 			elif square == Squares.FOOD:
 				temp.fill((255,0,0))
 			self.surface.blit(temp, (rowIdx*self.blockWidth+1, colIdx*self.blockHeight+1))
-			#self.beans = True
 		self.updatedSquares.clear()
 
 	def updateGameState(self):
@@ -81,13 +73,13 @@ class Snake():
 			self.headPos = position
 		self.board=board	# The game board this snake is on
 		self.length=length
+		self.score=0
 		self.direction = (1, 0)
 		self.nextDirection = (1, 0)
 		self.bodyPositionsQueue = []
 		for x in range(length-1, 0, -1):
 			board.grid[self.headPos[0]-x][self.headPos[1]] = Squares.SNAKE
 			self.bodyPositionsQueue.append((self.headPos[0]-x, self.headPos[1]))
-		print(self.bodyPositionsQueue)
 		board.grid[self.headPos[0]][self.headPos[1]] = Squares.HEAD
 
 	def updatePosition(self):
@@ -96,6 +88,7 @@ class Snake():
 		self.direction = self.nextDirection
 		newPos = ((x+dx) % self.board.width), ((y+dy) % self.board.height)
 		if self.board.grid[newPos[0]][newPos[1]] == Squares.FOOD:
+			self.score += 1
 			foundSpot = False
 			while not foundSpot:
 				randX = random.randint(0, self.board.width-1)
