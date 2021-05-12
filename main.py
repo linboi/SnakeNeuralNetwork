@@ -66,15 +66,13 @@ def graphics(board):
 
 def gameplay(board):
 	gameOver = False
-	clock = pygame.time.Clock()
 	while not gameOver:
-		board.updateGameState()
+		board.updateGameState(const.GAME_SPEED)
 		if pygame.event.peek(pygame.USEREVENT) or pygame.event.peek(pygame.QUIT):
 			gameOver = True
-		clock.tick(const.GAME_SPEED)
 
 def main():
-	board = snake.Board(sizeX=20,sizeY=20)
+	board = snake.Board(sizeX=const.X_GRID_SIZE,sizeY=const.Y_GRID_SIZE)
 	t = threading.Thread(target=graphics, args=[board])
 	t.start()
 	gameplay(board)
