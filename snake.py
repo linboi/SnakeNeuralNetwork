@@ -16,12 +16,23 @@ class Squares(Enum):
 			return False
 
 class Board():
-	def __init__(self, sizeX=10, sizeY=10, surface=None, drawMode=True):
+	def __init__(self, sizeX=10, sizeY=10, surface=None, drawMode=True, maxTurns=-1, seed=None):
+		if seed != None:
+			random.seed(seed)
 		self.height = sizeY
 		self.width = sizeX
 		self.clock = pygame.time.Clock()
 		self.grid = [[Squares.EMPTY for x in range(self.height)] for y in range(self.width)]
-		self.snake = Snake(self)
+		###	Use this to put walls at the edges of the arena ###
+
+		#for i in range(len(self.grid[0])):
+		#	self.grid[0][i] = Squares.WALL
+		#	self.grid[len(self.grid)-1][i] = Squares.WALL
+		#for i in range(len(self.grid[0])):
+		#	self.grid[i][0] = Squares.WALL
+		#	self.grid[i][len(self.grid[i])-1] = Squares.WALL
+
+		self.snake = Snake(self, maxTurns=maxTurns)
 		foundSpot = False
 		while not foundSpot:
 			randX = random.randint(0, self.width-1)
@@ -68,7 +79,7 @@ class Board():
 	def headlessNextState(self, decision, clocktime=0):
 		self.snake.updateDirection(self.snake.decisionToDirection(decision))
 		result = self.snake.updatePosition()
-		flattenedGrid = self.gridToNNInput()
+		flattenedGrid = self.gridToSnakeSightInput()
 		if clocktime != 0:
 			self.clock.tick(clocktime)
 		return (result, flattenedGrid)
@@ -91,16 +102,44 @@ class Board():
 				idx = idx + 1
 		return flatGridRepresentation
 
+	# This shows the snake each square it can move into on the next turn, very simple grid
+	def gridToSnakeSightInput(self):
+		flatGridRepresentation = [0]*4*2
+		x, y = self.snake.headPos
+		if self.grid[(x+1)%len(self.grid)][y].value == Squares.FOOD.value:
+			flatGridRepresentation[0] = 1
+		elif self.grid[(x+1)%len(self.grid)][y].value >= Squares.HEAD.value:
+			flatGridRepresentation[1] = 1
+		if self.grid[x-1][y].value == Squares.FOOD.value:
+			flatGridRepresentation[2] = 1
+		elif self.grid[x-1][y].value >= Squares.HEAD.value:
+			flatGridRepresentation[3] = 1
+		if self.grid[x][(y+1)%len(self.grid[x])].value == Squares.FOOD.value:
+			flatGridRepresentation[4] = 1
+		elif self.grid[x-1][(y+1)%len(self.grid[x])].value >= Squares.HEAD.value:
+			flatGridRepresentation[5] = 1
+		if self.grid[x-1][y-1].value == Squares.FOOD.value:
+			flatGridRepresentation[6] = 1
+		elif self.grid[x-1][y-1].value >= Squares.HEAD.value:
+			flatGridRepresentation[7] = 1
+		return flatGridRepresentation
+
+
 
 class Snake():
-	def __init__(self, board=None, length=3, position=None):
+	def __init__(self, board=None, length=2, position=None, maxTurns=-1):
 		if position == None:
-			self.headPos = (length, length)
+			self.headPos = (length-1, length-1)
 		else:
 			self.headPos = position
 		self.board=board	# The game board this snake is on
 		self.length=length
-		self.score=0
+		self.score = 0
+		self.turns = 0
+		self.maxTurns = maxTurns
+		self.turnLimited = False
+		if(self.maxTurns != -1):
+			self.turnLimited = True
 		self.direction = (1, 0)
 		self.nextDirection = (1, 0)
 		self.bodyPositionsQueue = []
@@ -110,14 +149,21 @@ class Snake():
 		board.grid[self.headPos[0]][self.headPos[1]] = Squares.HEAD
 
 	def updatePosition(self):
+		self.turns += 1
 		x, y = self.headPos
 		dx, dy = self.nextDirection
 		self.direction = self.nextDirection
 		newPos = ((x+dx) % self.board.width), ((y+dy) % self.board.height)
 		if self.board.grid[newPos[0]][newPos[1]] == Squares.FOOD:
 			self.score += 1
+			self.length += 1
 			foundSpot = False
+			atts = 0
 			while not foundSpot:
+				if atts > 50:
+					if self.length >= self.board.height*self.board.width -1:
+						return self.score
+				atts += 1
 				randX = random.randint(0, self.board.width-1)
 				randY = random.randint(0, self.board.height-1)
 				if self.board.grid[randX][randY] == Squares.EMPTY:
@@ -125,7 +171,7 @@ class Snake():
 					if(self.board.drawMode):
 						self.board.updatedSquares.add((randX, randY))
 					foundSpot = True
-		elif self.board.grid[newPos[0]][newPos[1]] == Squares.SNAKE:
+		elif (self.board.grid[newPos[0]][newPos[1]].value > Squares.HEAD.value) or (self.turnLimited and self.turns > self.maxTurns):
 			if self.board.drawMode:
 				pygame.event.post(pygame.event.Event(pygame.USEREVENT, {"EVENT":"GAMEOVER"}))
 			return self.score
